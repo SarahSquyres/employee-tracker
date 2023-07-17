@@ -74,7 +74,14 @@ function init() {
 
 
 function viewAllEmployees() {
-    db.query(`SELECT * FROM employee `, function (err, results) {
+    db.query(`SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id
+    FROM employee
+    LEFT JOIN employee AS manager
+    ON employee.manager_id = manager_id.id;)`, (err, results) => {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
         console.table(results);
         init();
     });
@@ -99,29 +106,43 @@ function updateEmployeeRole() {
     });
 }
 
+// Help from https://github.com/andreahergert/employee_tracker/blob/main/server.js and AskBCS tutor David
 function addRole() {
-    prompt([
-        {
-            type: "input",
-            name: "newRole",
-            message: "What is the name of the role?",
-        },
-        {
-            type: "input",
-            name: "newRoleSalary",
-            message: "What is the salary for this role?",
-        },
-        {
-            type: "list",
-            name: "newRoleDpt",
-            message: "To which department does this role belong?",
-            choices: "HELP!!"
-        },
+    db.query('SELECT * FROM department', function (err, results) {
+        dptList = results.map(department => ({
+            name: department.department_name,
+            value: department.id
+        }));
 
-    ]).then((answer) => {
-        db.query(`INSERT INTO role SET newRole='${answer.role_name}', newRoleSalary= ${answer.salary}, newRoleDpt= ${answer.department};`)
-        console.log("Added role!")
-        init();
+        prompt([
+            {
+                type: "input",
+                name: "newRole",
+                message: "What is the name of the role?",
+            },
+            {
+                type: "input",
+                name: "newRoleSalary",
+                message: "What is the salary for this role?",
+            },
+            {
+                type: "list",
+                name: "newRoleDpt",
+                message: "To which department does this role belong?",
+                choices: dptList
+            },
+
+        ]).then((answer) => {
+            db.query(`INSERT INTO role SET role_name='${answer.newRole}', salary='${answer.newRoleSalary}', department='${answer.newRoleDpt}';`, (err, results) => {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                console.log("Added Role Successfuly!");
+                init();
+            })
+        }
+        );
     });
 }
 
