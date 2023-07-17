@@ -115,7 +115,7 @@ function addRole() {
             type: "list",
             name: "newRoleDpt",
             message: "To which department does this role belong?",
-            choices: department.map(obj => obj.department_name)
+            choices: "HELP!!"
         },
 
     ]).then((answer) => {
