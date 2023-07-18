@@ -72,12 +72,16 @@ function init() {
     })
 }
 
-
+// Help from https://github.com/andreahergert/employee_tracker/blob/main/server.js
 function viewAllEmployees() {
-    db.query(`SELECT employee.id, employee.first_name, employee.last_name, employee.manager_id
-    FROM employee
-    LEFT JOIN employee AS manager
-    ON employee.manager_id = manager_id.id;)`, (err, results) => {
+    const sqlQuery = `SELECT employee.id AS ID, employee.first_name AS First, employee.last_name AS Last, role.role_name 
+    AS Role, department.department_name AS Department, role.salary AS Salary, 
+    CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employee 
+    LEFT JOIN employee manager on manager.id = employee.manager_id 
+    INNER JOIN role ON (role.id = employee.role) 
+    INNER JOIN department ON (department.id = role.department) ORDER BY employee.id;`
+
+    db.query(sqlQuery, (err, results) => {
                 if (err) {
                     console.log(err);
                     return;
@@ -88,14 +92,16 @@ function viewAllEmployees() {
 }
 
 function viewAllRoles() {
-    db.query(`SELECT * FROM role `, function (err, results) {
+    db.query(`SELECT role.id AS ID, role.role_name AS Role, role.salary AS Salary, 
+    department.department_name AS Department FROM role 
+    INNER JOIN department ON (department.id = role.department);`, function (err, results) {
         console.table(results);
         init();
     });
 }
 
 function viewAllDepartments() {
-    db.query('SELECT * FROM department', function (err, results) {
+    db.query('SELECT department.id AS ID, department.department_name AS Department FROM department', function (err, results) {
         console.table(results);
         init();
     });
@@ -133,7 +139,8 @@ function addRole() {
             },
 
         ]).then((answer) => {
-            db.query(`INSERT INTO role SET role_name='${answer.newRole}', salary='${answer.newRoleSalary}', department='${answer.newRoleDpt}';`, (err, results) => {
+            db.query(`INSERT INTO role SET role_name='${answer.newRole}', salary='${answer.newRoleSalary}', 
+            department='${answer.newRoleDpt}';`, (err, results) => {
                 if (err) {
                     console.log(err);
                     return;
@@ -162,34 +169,64 @@ function addDepartment() {
 }
 
 function addEmployee() {
-    prompt([
-        {
-            name: "firstName",
-            type: "input",
-            message: "What is the employee's first name?",
-        },
-        {
-            name: "lastName",
-            type: "input",
-            message: "What is the employee's last name?",
-        },
-        {
-            name: "newRole",
-            type: "list",
-            message: "What is the employee's role?",
-            choices: [
-                "Sales",
-                "Engineering",
-                "Finance",
-                "Legal"]
-        },
-        // {
-        //     name: "manager",
-        //     type: "list",
-        //     message: "Who is the employee's manager?",
-        //     choices: employeeList
-        // }
-    ]).then(function (answer) {
-        db.query("INSERT INTO employee")
+    db.query('SELECT * FROM role', function (err, results){
+        roleList = results.map(role => ({
+            name: role.role_name,
+            value: role.id
+        }));
+    
+    db.query(`SELECT * FROM employee`, function (err, results){
+        employeeList = results.map(employee => ({
+            name: employee.first_name.concat(" ", employee.last_name),
+            value: employee.id
+        }));
+        prompt([
+            {
+                name: "newEmplFirstName",
+                type: "input",
+                message: "What is the employee's first name?",
+            },
+            {
+                name: "newEmplLastName",
+                type: "input",
+                message: "What is the employee's last name?",
+            },
+            {
+                type: "list",
+                name: "newEmplRole",
+                message: "What is the new employee's role?",
+                choices: roleList
+            },
+            {
+                name: "newEmplManager",
+                type: "list",
+                message: "Who is the employee's manager?",
+                choices: employeeList
+            }
+        ]).then((answer) => {
+            db.query(`INSERT INTO employee SET first_name='${answer.newEmplFirstName}', last_name='${answer.newEmplLastName}', 
+            role='${answer.newEmplRole}', manager_id='${answer.newEmplManager}';`, (err, results) =>{
+                if (err){
+                console.log(err);
+                return;   
+                }
+        console.log("Added Employee Successfuly!");
+        init();
     })
+
+            } )
+        })
+    });
+
+
 };
+
+// .then((answer) => {
+//     db.query(`INSERT INTO role SET role_name='${answer.newRole}', salary='${answer.newRoleSalary}', 
+//     department='${answer.newRoleDpt}';`, (err, results) => {
+//         if (err) {
+//             console.log(err);
+//             return;
+//         }
+//         console.log("Added Role Successfuly!");
+//         init();
