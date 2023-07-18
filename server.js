@@ -82,10 +82,10 @@ function viewAllEmployees() {
     INNER JOIN department ON (department.id = role.department) ORDER BY employee.id;`
 
     db.query(sqlQuery, (err, results) => {
-                if (err) {
-                    console.log(err);
-                    return;
-                }
+        if (err) {
+            console.log(err);
+            return;
+        }
         console.table(results);
         init();
     });
@@ -107,8 +107,47 @@ function viewAllDepartments() {
     });
 }
 function updateEmployeeRole() {
-    db.query('UPDATE employee SET column1 = value1', function (err, results) {
-        console.log(results);
+    db.query('SELECT * FROM role', function (err, results) {
+        roleList = results.map(role => ({
+            name: role.role_name,
+            value: role.id
+        }));
+
+        db.query(`SELECT * FROM employee`, function (err, results) {
+            employeeList = results.map(employee => ({
+                name: employee.first_name.concat(" ", employee.last_name),
+                value: employee.id
+            }));
+            prompt([
+                {
+                    name: "updateRoleEmpl",
+                    type: "list",
+                    message: "Whose role would you like to update?",
+                    choices: employeeList
+                },
+                {
+                    type: "list",
+                    name: "updateRoleRole",
+                    message: "What is their new role?",
+                    choices: roleList
+                },
+                {
+                    name: "updateRoleManager",
+                    type: "list",
+                    message: "Who is the employee's manager?",
+                    choices: employeeList
+                }
+            ]).then((answer) => {
+                db.query(`UPDATE employee SET role='${answer.updateRoleRole}', manager_id='${answer.updateRoleManager}' WHERE id=${answer.updateRoleEmpl};`, (err, results) => {
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }
+                    console.log("Updated Employee Successfuly!");
+                    init();
+                })
+            })
+        })
     });
 }
 
@@ -162,71 +201,58 @@ function addDepartment() {
         }
 
     ]).then((answer) => {
-        db.query(`INSERT INTO department(department_name) VALUES('${answer.department}');`)
+        db.query(`INSERT INTO department SET department_name='${answer.newDepartment}';`)
         console.log("Added department!")
         init();
     });
 }
 
 function addEmployee() {
-    db.query('SELECT * FROM role', function (err, results){
+    db.query('SELECT * FROM role', function (err, results) {
         roleList = results.map(role => ({
             name: role.role_name,
             value: role.id
         }));
-    
-    db.query(`SELECT * FROM employee`, function (err, results){
-        employeeList = results.map(employee => ({
-            name: employee.first_name.concat(" ", employee.last_name),
-            value: employee.id
-        }));
-        prompt([
-            {
-                name: "newEmplFirstName",
-                type: "input",
-                message: "What is the employee's first name?",
-            },
-            {
-                name: "newEmplLastName",
-                type: "input",
-                message: "What is the employee's last name?",
-            },
-            {
-                type: "list",
-                name: "newEmplRole",
-                message: "What is the new employee's role?",
-                choices: roleList
-            },
-            {
-                name: "newEmplManager",
-                type: "list",
-                message: "Who is the employee's manager?",
-                choices: employeeList
-            }
-        ]).then((answer) => {
-            db.query(`INSERT INTO employee SET first_name='${answer.newEmplFirstName}', last_name='${answer.newEmplLastName}', 
-            role='${answer.newEmplRole}', manager_id='${answer.newEmplManager}';`, (err, results) =>{
-                if (err){
-                console.log(err);
-                return;   
-                }
-        console.log("Added Employee Successfuly!");
-        init();
-    })
 
-            } )
+        db.query(`SELECT * FROM employee`, function (err, results) {
+            employeeList = results.map(employee => ({
+                name: employee.first_name.concat(" ", employee.last_name),
+                value: employee.id
+            }));
+            prompt([
+                {
+                    name: "newEmplFirstName",
+                    type: "input",
+                    message: "What is the employee's first name?",
+                },
+                {
+                    name: "newEmplLastName",
+                    type: "input",
+                    message: "What is the employee's last name?",
+                },
+                {
+                    type: "list",
+                    name: "newEmplRole",
+                    message: "What is the new employee's role?",
+                    choices: roleList
+                },
+                {
+                    name: "newEmplManager",
+                    type: "list",
+                    message: "Who is the employee's manager?",
+                    choices: employeeList
+                }
+            ]).then((answer) => {
+                db.query(`INSERT INTO employee SET first_name='${answer.newEmplFirstName}', last_name='${answer.newEmplLastName}', 
+            role='${answer.newEmplRole}', manager_id='${answer.newEmplManager}';`, (err, results) => {
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }
+                    console.log("Added Employee Successfuly!");
+                    init();
+                })
+            })
         })
     });
-
-
 };
-
-// .then((answer) => {
-//     db.query(`INSERT INTO role SET role_name='${answer.newRole}', salary='${answer.newRoleSalary}', 
-//     department='${answer.newRoleDpt}';`, (err, results) => {
-//         if (err) {
-//             console.log(err);
-//             return;
-//         }
-//         console.log("Added Role Successfuly!");
-//         init();
